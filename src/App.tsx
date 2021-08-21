@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import React, { useState, useMemo, ChangeEvent } from 'react';
+import { format, compareAsc, compareDesc } from 'date-fns';
+import { BiSortUp, BiSortDown } from 'react-icons/bi';
 
 import './App.scss';
 
@@ -28,27 +29,56 @@ const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DES
 function App() {
   const defaultData = useMemo(() => mockData, []);
   const [holders, setHolders] = useState<AccountHolders[]>(defaultData);
-  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
+  const [dateSortOrder, setDateSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
+  const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
 
-  const columnheaders = useMemo(
+  const columns = useMemo(
     () => [
-      'First Name',
-      'Last Name',
-      'Country Code',
-      'Email',
-      'Date of Birth',
-      'Auth Type',
-      'Tokens Held',
-      'Date Created'
+      {
+        Header: 'First Name',
+        colKey: 'First Name'
+      },
+      {
+        Header: 'Last Name',
+        colKey: 'Last Name'
+      },
+      {
+        Header: 'Country Code',
+        colKey: 'country',
+        filterable: true
+      },
+      {
+        Header: 'Email',
+        colKey: 'email'
+      },
+      {
+        Header: 'Date of Birth',
+        colKey: 'dob'
+      },
+      {
+        Header: 'Auth Type',
+        colKey: 'mfa',
+        filterable: true
+      },
+      {
+        Header: 'Tokens Held',
+        colKey: 'amt',
+        sortable: true
+      },
+      {
+        Header: 'Date Created',
+        colKey: 'createdDate',
+        sortable: true
+      }
     ],
     []
   );
 
-  const sortByCountry = () => {
-    const newSortOrder = sortConfig.length - 1 === sortOrder ? 0 : sortOrder + 1;
+  const sortByTokenAmount = () => {
+    const newSortOrder = sortConfig.length - 1 === amountSortOrder ? 0 : amountSortOrder + 1;
 
     if (newSortOrder === SortOrder.DEFAULT) {
-      setSortOrder(newSortOrder);
+      setAmountSortOrder(newSortOrder);
       setHolders(mockData);
       return;
     }
@@ -56,8 +86,8 @@ function App() {
     const isDescending = newSortOrder === SortOrder.DESC;
 
     const answer = [...mockData].sort((a, b) => {
-      var nameA = a.Country.toUpperCase();
-      var nameB = b.Country.toUpperCase();
+      const nameA = a.amt;
+      const nameB = b.amt;
       if (nameA < nameB) {
         return isDescending ? 1 : -1;
       }
@@ -67,8 +97,32 @@ function App() {
       return 0;
     });
 
-    setSortOrder(newSortOrder);
+    setAmountSortOrder(newSortOrder);
     setHolders(answer);
+  };
+
+  const sortByDate = () => {
+    const newSortOrder = sortConfig.length - 1 === dateSortOrder ? 0 : dateSortOrder + 1;
+
+    if (newSortOrder === SortOrder.DEFAULT) {
+      setDateSortOrder(newSortOrder);
+      setHolders(mockData);
+      return;
+    }
+    const isDescending = newSortOrder === SortOrder.DESC;
+
+    const answer = [...mockData].sort((a, b) => {
+      const nameA = new Date(a.createdDate);
+      const nameB = new Date(b.createdDate);
+      return isDescending ? compareDesc(nameA, nameB) : compareAsc(nameA, nameB);
+    });
+
+    setDateSortOrder(newSortOrder);
+    setHolders(answer);
+  };
+
+  const handleSelect = (evt: ChangeEvent<HTMLSelectElement>) => {
+    console.log(evt.target.value);
   };
 
   return (
@@ -77,20 +131,48 @@ function App() {
         <h1>Ledn Token Dashboard</h1>
       </header>
 
+      <div className="form-group w-25 my-4">
+        <label htmlFor="filterOPtion" className="mb-2">
+          <strong>Filter Options:</strong>
+        </label>
+        <select defaultValue="null" className="form-select" onChange={handleSelect} aria-label="filterOption">
+          <option disabled value="null">
+            Filter By
+          </option>
+          <option value="country">Country</option>
+          <option value="mfa">Auth Type</option>
+        </select>
+      </div>
+
       <table className="table table-hover">
         <thead className="border-0">
           <tr className="border-0">
-            {columnheaders.map((col) => (
+            {columns.map((col) => (
               <th
-                key={col}
+                key={col.colKey}
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
-                  if (col === 'Country Code') {
-                    sortByCountry();
+                  if (col.sortable && col.colKey === 'amt') {
+                    sortByTokenAmount();
+                  }
+                  if (col.sortable && col.colKey === 'createdDate') {
+                    sortByDate();
                   }
                 }}
               >
-                {col}
+                {col.Header}
+                {amountSortOrder !== SortOrder.DEFAULT && (
+                  <span className="pl-2">
+                    {col.colKey === 'amt' && SortOrder.ASC === amountSortOrder && <BiSortUp />}
+                    {col.colKey === 'amt' && SortOrder.DESC === amountSortOrder && <BiSortDown />}
+                  </span>
+                )}
+                {dateSortOrder !== SortOrder.DEFAULT && (
+                  <span className="pl-2">
+                    {col.colKey === 'createdDate' && SortOrder.ASC === dateSortOrder && <BiSortUp />}
+                    {col.colKey === 'createdDate' && SortOrder.DESC === dateSortOrder && <BiSortDown />}
+                  </span>
+                )}
               </th>
             ))}
           </tr>
