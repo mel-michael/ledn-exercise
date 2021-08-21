@@ -1,21 +1,75 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 
 import './App.scss';
 
 import mockData from './data/accounts.json';
 
+type AccountHolders = {
+  'First Name': string;
+  'Last Name': string;
+  Country: string;
+  email: string;
+  dob: string;
+  mfa: string | null;
+  amt: number;
+  createdDate: string;
+  ReferredBy: string | null;
+};
+
+enum SortOrder {
+  DEFAULT,
+  ASC,
+  DESC
+}
+
+const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
+
 function App() {
-  const columnheaders = [
-    'First Name',
-    'Last Name',
-    'Country Code',
-    'Email',
-    'Date of Birth',
-    'Auth Type',
-    'Tokens Held',
-    'Date Created'
-  ];
+  const defaultData = useMemo(() => mockData, []);
+  const [holders, setHolders] = useState<AccountHolders[]>(defaultData);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
+
+  const columnheaders = useMemo(
+    () => [
+      'First Name',
+      'Last Name',
+      'Country Code',
+      'Email',
+      'Date of Birth',
+      'Auth Type',
+      'Tokens Held',
+      'Date Created'
+    ],
+    []
+  );
+
+  const sortByCountry = () => {
+    const newSortOrder = sortConfig.length - 1 === sortOrder ? 0 : sortOrder + 1;
+
+    if (newSortOrder === SortOrder.DEFAULT) {
+      setSortOrder(newSortOrder);
+      setHolders(mockData);
+      return;
+    }
+
+    const isDescending = newSortOrder === SortOrder.DESC;
+
+    const answer = [...mockData].sort((a, b) => {
+      var nameA = a.Country.toUpperCase();
+      var nameB = b.Country.toUpperCase();
+      if (nameA < nameB) {
+        return isDescending ? 1 : -1;
+      }
+      if (nameA > nameB) {
+        return isDescending ? -1 : 1;
+      }
+      return 0;
+    });
+
+    setSortOrder(newSortOrder);
+    setHolders(answer);
+  };
 
   return (
     <div className="container">
@@ -24,25 +78,35 @@ function App() {
       </header>
 
       <table className="table table-hover">
-        <thead className="border">
-          <tr>
+        <thead className="border-0">
+          <tr className="border-0">
             {columnheaders.map((col) => (
-              <th key={col}>{col}</th>
+              <th
+                key={col}
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  if (col === 'Country Code') {
+                    sortByCountry();
+                  }
+                }}
+              >
+                {col}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {mockData.map((data) => {
+          {holders.map((user) => {
             return (
-              <tr>
-                <td>{data['First Name']}</td>
-                <td>{data['Last Name']}</td>
-                <td>{data.Country}</td>
-                <td>{data.email.toLowerCase()}</td>
-                <td>{format(new Date(data.dob), 'MM-dd-yyyy')}</td>
-                <td>{data.mfa}</td>
-                <td>{data.amt.toLocaleString()}</td>
-                <td>{format(new Date(data.createdDate), 'MMM-dd-yyyy')}</td>
+              <tr key={user.createdDate}>
+                <td>{user['First Name']}</td>
+                <td>{user['Last Name']}</td>
+                <td>{user.Country}</td>
+                <td>{user.email.toLowerCase()}</td>
+                <td>{format(new Date(user.dob), 'MM-dd-yyyy')}</td>
+                <td>{user.mfa}</td>
+                <td>{user.amt.toLocaleString()}</td>
+                <td>{format(new Date(user.createdDate), 'MMM-dd-yyyy')}</td>
               </tr>
             );
           })}
