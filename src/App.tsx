@@ -12,6 +12,7 @@ function App() {
     'Country Code',
     'Email',
     'Date of Birth',
+    'Auth Type',
     'Tokens Held',
     'Date Created'
   ];
@@ -23,7 +24,7 @@ function App() {
       </header>
 
       <table className="table table-hover">
-        <thead>
+        <thead className="border">
           <tr>
             {columnheaders.map((col) => (
               <th key={col}>{col}</th>
@@ -34,13 +35,14 @@ function App() {
           {mockData.map((data) => {
             return (
               <tr>
-                <th>{data['First Name']}</th>
-                <th>{data['Last Name']}</th>
-                <th>{data.Country}</th>
-                <th>{data.email.toLowerCase()}</th>
-                <th>{format(new Date(data.dob), 'MM-dd-yyyy')}</th>
-                <th>{data.amt.toLocaleString()}</th>
-                <th>{format(new Date(data.createdDate), 'MMM-dd-yyyy')}</th>
+                <td>{data['First Name']}</td>
+                <td>{data['Last Name']}</td>
+                <td>{data.Country}</td>
+                <td>{data.email.toLowerCase()}</td>
+                <td>{format(new Date(data.dob), 'MM-dd-yyyy')}</td>
+                <td>{data.mfa}</td>
+                <td>{data.amt.toLocaleString()}</td>
+                <td>{format(new Date(data.createdDate), 'MMM-dd-yyyy')}</td>
               </tr>
             );
           })}
