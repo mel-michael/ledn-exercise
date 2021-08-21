@@ -26,6 +26,15 @@ enum SortOrder {
 
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
+const countryList = mockData.map((mock) => mock.Country);
+const authList = mockData.map((mock) => mock.mfa);
+
+console.log('CO::', countryList);
+console.log('CO::', new Set(countryList), Array.from(new Set(countryList)));
+
+const countryCodes = Array.from(new Set(countryList));
+const authTypes = Array.from(new Set(authList));
+
 function App() {
   const defaultData = useMemo(() => mockData, []);
   const [holders, setHolders] = useState<AccountHolders[]>(defaultData);
@@ -121,7 +130,7 @@ function App() {
     setHolders(answer);
   };
 
-  const handleSelect = (evt: ChangeEvent<HTMLSelectElement>) => {
+  const filterByCountry = (evt: ChangeEvent<HTMLSelectElement>) => {
     console.log(evt.target.value);
   };
 
@@ -131,17 +140,37 @@ function App() {
         <h1>Ledn Token Dashboard</h1>
       </header>
 
-      <div className="form-group w-25 my-4">
-        <label htmlFor="filterOPtion" className="mb-2">
-          <strong>Filter Options:</strong>
-        </label>
-        <select defaultValue="null" className="form-select" onChange={handleSelect} aria-label="filterOption">
-          <option disabled value="null">
-            Filter By
-          </option>
-          <option value="country">Country</option>
-          <option value="mfa">Auth Type</option>
-        </select>
+      <div className="row">
+        <div className="form-group w-25 my-4">
+          <label htmlFor="filterOPtion" className="mb-2">
+            <strong>Filter By Country Code:</strong>
+          </label>
+          <select defaultValue="null" className="form-select" onChange={filterByCountry} aria-label="filterOption">
+            <option disabled value="null">
+              Select Country Code
+            </option>
+            {countryCodes.map((list) => (
+              <option key={list} value={list}>
+                {list}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group w-25 my-4 ml-4">
+          <label htmlFor="filterOPtion" className="mb-2">
+            <strong>Filter By Auth Type:</strong>
+          </label>
+          <select defaultValue="null" className="form-select" onChange={filterByCountry} aria-label="filterOption">
+            <option disabled value="null">
+              Select Auth Type
+            </option>
+            {authTypes.map((auth) => (
+              <option key={auth} value={auth}>
+                {auth === 'null' ? 'No Auth' : auth}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <table className="table table-hover">
