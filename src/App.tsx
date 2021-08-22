@@ -1,45 +1,25 @@
-import React, { useState, useMemo, ChangeEvent } from 'react';
+import { useState, useMemo, ChangeEvent, useEffect } from 'react';
 import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown } from 'react-icons/bi';
 
 import './App.scss';
+import { AccountHolders, SortOrder } from './types';
 
-import mockData from './data/accounts.json';
-
-type AccountHolders = {
-  'First Name': string;
-  'Last Name': string;
-  Country: string;
-  email: string;
-  dob: string;
-  mfa: string | null;
-  amt: number;
-  createdDate: string;
-  ReferredBy: string | null;
-};
-
-enum SortOrder {
-  DEFAULT,
-  ASC,
-  DESC
-}
+const API_URL = 'http://localhost:7000';
 
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
-const countryList = mockData.map((mock) => mock.Country);
-const authList = mockData.map((mock) => mock.mfa);
-
-console.log('CO::', countryList);
-console.log('CO::', new Set(countryList), Array.from(new Set(countryList)));
-
-const countryCodes = Array.from(new Set(countryList));
-const authTypes = Array.from(new Set(authList));
-
 function App() {
-  const defaultData = useMemo(() => mockData, []);
-  const [holders, setHolders] = useState<AccountHolders[]>(defaultData);
+  const [holders, setHolders] = useState<AccountHolders[]>([]);
   const [dateSortOrder, setDateSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
   const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
+
+  // generate filter list
+  const countryList = holders.length > 0 ? holders.map((mock) => mock.Country) : [];
+  const authList = holders.length > 0 ? holders.map((mock) => mock.mfa) : [];
+  // make list unique
+  const countryCodes = Array.from(new Set(countryList));
+  const authTypes = Array.from(new Set(authList));
 
   const columns = useMemo(
     () => [
@@ -88,13 +68,13 @@ function App() {
 
     if (newSortOrder === SortOrder.DEFAULT) {
       setAmountSortOrder(newSortOrder);
-      setHolders(mockData);
+      setHolders(holders);
       return;
     }
 
     const isDescending = newSortOrder === SortOrder.DESC;
 
-    const answer = [...mockData].sort((a, b) => {
+    const sortedByTokensHeld = [...holders].sort((a, b) => {
       const nameA = a.amt;
       const nameB = b.amt;
       if (nameA < nameB) {
@@ -107,7 +87,7 @@ function App() {
     });
 
     setAmountSortOrder(newSortOrder);
-    setHolders(answer);
+    setHolders(sortedByTokensHeld);
   };
 
   const sortByDate = () => {
@@ -115,24 +95,32 @@ function App() {
 
     if (newSortOrder === SortOrder.DEFAULT) {
       setDateSortOrder(newSortOrder);
-      setHolders(mockData);
+      setHolders(holders);
       return;
     }
     const isDescending = newSortOrder === SortOrder.DESC;
 
-    const answer = [...mockData].sort((a, b) => {
+    const sortedByDate = [...holders].sort((a, b) => {
       const nameA = new Date(a.createdDate);
       const nameB = new Date(b.createdDate);
       return isDescending ? compareDesc(nameA, nameB) : compareAsc(nameA, nameB);
     });
 
     setDateSortOrder(newSortOrder);
-    setHolders(answer);
+    setHolders(sortedByDate);
   };
 
   const filterByCountry = (evt: ChangeEvent<HTMLSelectElement>) => {
     console.log(evt.target.value);
   };
+
+  useEffect(() => {
+    fetch(API_URL)
+      .then((res) => res.json())
+      .then((data) => {
+        setHolders(data);
+      });
+  }, []);
 
   return (
     <div className="container">
@@ -207,20 +195,22 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {holders.map((user) => {
-            return (
-              <tr key={user.createdDate}>
-                <td>{user['First Name']}</td>
-                <td>{user['Last Name']}</td>
-                <td>{user.Country}</td>
-                <td>{user.email.toLowerCase()}</td>
-                <td>{format(new Date(user.dob), 'MM-dd-yyyy')}</td>
-                <td>{user.mfa}</td>
-                <td>{user.amt.toLocaleString()}</td>
-                <td>{format(new Date(user.createdDate), 'MMM-dd-yyyy')}</td>
-              </tr>
-            );
-          })}
+          {holders.length === 0 && <tr>Loading data...</tr>}
+          {holders.length > 0 &&
+            holders.map((user) => {
+              return (
+                <tr key={user.createdDate}>
+                  <td>{user['First Name']}</td>
+                  <td>{user['Last Name']}</td>
+                  <td>{user.Country}</td>
+                  <td>{user.email.toLowerCase()}</td>
+                  <td>{format(new Date(user.dob), 'MM-dd-yyyy')}</td>
+                  <td>{user.mfa}</td>
+                  <td>{user.amt.toLocaleString()}</td>
+                  <td>{format(new Date(user.createdDate), 'MMM-dd-yyyy')}</td>
+                </tr>
+              );
+            })}
         </tbody>
       </table>
     </div>
