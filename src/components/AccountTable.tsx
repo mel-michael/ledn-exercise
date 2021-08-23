@@ -1,81 +1,37 @@
-import { useState, useMemo, ChangeEvent } from 'react';
+import { useState, useCallback, ChangeEvent, useEffect } from 'react';
 import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown, BiSort } from 'react-icons/bi';
 import { CSVLink } from 'react-csv';
 
 import '../App.scss';
+import { lednApi } from '../utils/api';
+import { columns } from '../constant';
 import { AccountHolders, SortOrder, Page } from '../types';
 
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
 type TableProps = {
-  pageSize: number;
   countries: string[];
   authTypes: string[];
-  loadData: VoidFunction;
   accounts: AccountHolders[];
-  handleSearch: (val: string) => void;
-  handlePageSize: (val: number) => void;
-  fetchPaginatedData: (val: Page) => void;
-  filterData: (type: string, value: string) => void;
 };
 
-export const AccountTable: React.FC<TableProps> = ({
-  countries,
-  loadData,
-  authTypes,
-  accounts,
-  pageSize,
-  fetchPaginatedData,
-  handlePageSize,
-  handleSearch,
-  filterData
-}) => {
+export const AccountTable: React.FC<TableProps> = ({ countries, authTypes, accounts }) => {
   const [loading, setLoading] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
+  const [pageSize, setPageSize] = useState(100);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [lastDocId, setLastDocId] = useState('');
   const [holders, setHolders] = useState<AccountHolders[]>(accounts);
   const [dateSortOrder, setDateSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
   const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
 
-  const columns = useMemo(
-    () => [
-      {
-        label: 'First Name',
-        key: 'First Name'
-      },
-      {
-        label: 'Last Name',
-        key: 'Last Name'
-      },
-      {
-        label: 'Country Code',
-        key: 'Country'
-      },
-      {
-        label: 'Email',
-        key: 'email'
-      },
-      {
-        label: 'Date of Birth',
-        key: 'dob'
-      },
-      {
-        label: 'Auth Type',
-        key: 'mfa'
-      },
-      {
-        label: 'Tokens Held',
-        key: 'amt',
-        sortable: true
-      },
-      {
-        label: 'Date Created',
-        key: 'createdDate',
-        sortable: true
-      }
-    ],
-    []
-  );
+  const loadData = useCallback(async () => {
+    const result = await lednApi.post('/', { pageSize });
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+    setLoading(false)
+  }, [pageSize]);
 
   const sortByTokenAmount = () => {
     const newSortOrder = sortConfig.length - 1 === amountSortOrder ? 0 : amountSortOrder + 1;
@@ -124,6 +80,24 @@ export const AccountTable: React.FC<TableProps> = ({
     setHolders(sortedByDate);
   };
 
+  const filterData = async (type: string, value: string) => {
+    const result = await lednApi.post('/filter', { pageSize, type, value });
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+  };
+
+  const handleSearch = async () => {
+    const result = await lednApi.post('/search', { pageSize, value: searchTerm });
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+  };
+
+  const fetchPaginatedData = async (url: string) => {
+    const result = await lednApi.post(`/${url}`, { pageSize, lastId: lastDocId });
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+  };
+
   const filterByCountryCode = ({ target: { name, value } }: ChangeEvent<HTMLSelectElement>) => {
     filterData(name, value);
   };
@@ -133,42 +107,47 @@ export const AccountTable: React.FC<TableProps> = ({
   };
 
   const handleNext = () => {
-    setLoading(true);
+    // setLoading(true);
     fetchPaginatedData(Page.NEXT);
   };
 
   const handlePrev = () => {
-    setLoading(true);
+    // setLoading(true);
     fetchPaginatedData(Page.PREV);
   };
 
   const handleChange = ({ target: { value } }: ChangeEvent<HTMLInputElement>) => {
-    setSearchInput(value);
+    setSearchTerm(value);
     if (!value) {
       loadData();
     }
   };
 
-  const onSearch = () => {
-    handleSearch(searchInput);
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   return (
     <>
+      <div className="mt-5 mb-3 border-bottom">
+        <h2 className="mb-0">Ledn Account Holders</h2>
+      </div>
+
       <div className="row">
         <form className="d-flex my-3 col-8">
           <input
-            value={searchInput}
+            value={searchTerm}
             onChange={handleChange}
             className="form-control me-2"
             type="search"
             placeholder="Search account name"
             aria-label="Search"
           />
-          <button onClick={onSearch} className="btn btn-outline-info" type="button">
+          <button onClick={handleSearch} className="btn btn-outline-info" type="button">
             Search
           </button>
         </form>
+
         <div className="col-4 my-3 d-flex justify-content-end align-items-center">
           <CSVLink data={holders} headers={columns}>
             <button className="btn btn-primary">Download CSV</button>
@@ -213,6 +192,7 @@ export const AccountTable: React.FC<TableProps> = ({
             ))}
           </select>
         </div>
+
         <div className="w-100 my-4 d-flex justify-content-end">
           <div>
             <label htmlFor="pageSize" className="mb-2">
@@ -223,7 +203,7 @@ export const AccountTable: React.FC<TableProps> = ({
               name="pageSize"
               className="form-select"
               onChange={(evt: ChangeEvent<HTMLSelectElement>) => {
-                handlePageSize(Number(evt.target.value));
+                setPageSize(Number(evt.target.value));
               }}
               aria-label="pageSize"
             >

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 // components & styles
 import './App.scss';
@@ -11,10 +11,9 @@ import { AccountHolders } from './types';
 import mockData from './data/accounts.json';
 
 function App() {
-  const [pageSize, setPageSize] = useState(100);
   const [userCount, setUserCount] = useState(0);
-  const [lastDocId, setLastDocId] = useState();
-  const [loading, setLoading] = useState(true);
+  const [, setLastDocId] = useState('');
+  const [loading, setLoading] = useState(false);
   const [holders, setHolders] = useState<AccountHolders[]>([]);
 
   // generate filter list
@@ -24,59 +23,26 @@ function App() {
   const countryCodes = Array.from(new Set(countryList));
   const authTypes = Array.from(new Set(authList));
 
-  const loadData = useCallback(async () => {
-    const result = await lednApi.post('/', { pageSize });
-    setLoading(false);
-    setHolders(result.data.accounts);
-    setLastDocId(result.data.lastDocId);
-    setUserCount(result.data.count);
-  }, [pageSize]);
-
-  const fetchPaginatedData = async (url: string) => {
-    const result = await lednApi.post(`/${url}`, { pageSize, lastId: lastDocId });
-    setHolders(result.data.accounts);
-    setLastDocId(result.data.lastDocId);
-  };
-
-  const handleSearch = async (searchTerm: string) => {
-    const result = await lednApi.post('/search', { pageSize, value: searchTerm });
-    setHolders(result.data.accounts);
-    setLastDocId(result.data.lastDocId);
-  };
-
-  const filterData = async (type: string, value: string) => {
-    const result = await lednApi.post('/filter', { pageSize, type, value });
-    setHolders(result.data.accounts);
-    setLastDocId(result.data.lastDocId);
-  };
-
   useEffect(() => {
+    const loadData = async () => {
+      const result = await lednApi.post('/');
+      setHolders(result.data.accounts);
+      setLastDocId(result.data.lastDocId);
+      setUserCount(result.data.count);
+      setLoading(false);
+    };
     loadData();
-  }, [loadData]);
+  }, []);
 
   return (
     <div className="container">
-      <header className="mt-5 mb-3">
+      <header className="mt-5 mb-3 text-center ">
         <h1>Ledn Token Dashboard</h1>
       </header>
 
       <Insights countryCount={countryCodes.length} userCount={userCount} />
 
-      {loading && <p>Fetching data...</p>}
-
-      {!loading && holders.length > 0 && (
-        <AccountTable
-          pageSize={pageSize}
-          loadData={loadData}
-          accounts={holders}
-          countries={countryCodes}
-          authTypes={authTypes}
-          handlePageSize={(val: number) => setPageSize(val)}
-          filterData={filterData}
-          handleSearch={handleSearch}
-          fetchPaginatedData={fetchPaginatedData}
-        />
-      )}
+      {!loading && <AccountTable accounts={holders} countries={countryCodes} authTypes={authTypes} />}
     </div>
   );
 }
