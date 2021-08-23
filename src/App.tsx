@@ -119,12 +119,12 @@ function App() {
     setHolders(sortedByDate);
   };
 
-  const filterByCountryCode = ({ target: { value } }: ChangeEvent<HTMLSelectElement>) => {
-    filterData(value);
+  const filterByCountryCode = ({ target: { name, value } }: ChangeEvent<HTMLSelectElement>) => {
+    filterData(name, value);
   };
 
-  const filterByAuthtype = ({ target: { value } }: ChangeEvent<HTMLSelectElement>) => {
-    filterData(value);
+  const filterByAuthtype = ({ target: { name, value } }: ChangeEvent<HTMLSelectElement>) => {
+    filterData(name, value);
   };
 
   const handlePageSize = (evt: ChangeEvent<HTMLSelectElement>) => {
@@ -139,8 +139,8 @@ function App() {
     fetchPaginatedData(Page.PREV);
   };
 
-  const filterData = async (value: string) => {
-    const result = await lednApi.post('/filter', { pageSize, option: value });
+  const filterData = async (type: string, value: string) => {
+    const result = await lednApi.post('/filter', { pageSize, type, value });
     setHolders(result.data.accounts);
     setLastDocId(result.data.lastDocId);
   };
@@ -166,10 +166,16 @@ function App() {
 
       <div className="d-flex">
         <div className="w-100 my-4 me-4">
-          <label htmlFor="filterOPtion" className="mb-2">
+          <label htmlFor="Country" className="mb-2">
             <strong>Filter By Country Code:</strong>
           </label>
-          <select defaultValue="null" className="form-select" onChange={filterByCountryCode} aria-label="filterOption">
+          <select
+            defaultValue="null"
+            name="Country"
+            className="form-select"
+            onChange={filterByCountryCode}
+            aria-label="Country"
+          >
             <option disabled value="null">
               Select Country Code
             </option>
@@ -181,10 +187,10 @@ function App() {
           </select>
         </div>
         <div className="w-100 my-4 me-4">
-          <label htmlFor="filterOPtion" className="mb-2">
+          <label htmlFor="mfa" className="mb-2">
             <strong>Filter By Auth Type:</strong>
           </label>
-          <select defaultValue="null" className="form-select" onChange={filterByAuthtype} aria-label="filterOption">
+          <select defaultValue="null" name="mfa" className="form-select" onChange={filterByAuthtype} aria-label="mfa">
             <option disabled value="null">
               Select Auth Type
             </option>
@@ -197,10 +203,16 @@ function App() {
         </div>
         <div className="w-100 my-4 d-flex justify-content-end">
           <div>
-            <label htmlFor="filterOPtion" className="mb-2">
+            <label htmlFor="pageSize" className="mb-2">
               <strong>Page Size:</strong>
             </label>
-            <select defaultValue={pageSize} className="form-select" onChange={handlePageSize} aria-label="filterOption">
+            <select
+              defaultValue={pageSize}
+              name="pageSize"
+              className="form-select"
+              onChange={handlePageSize}
+              aria-label="pageSize"
+            >
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
