@@ -1,6 +1,7 @@
-import { useState, useMemo, ChangeEvent, useEffect } from 'react';
+import { useState, useMemo, ChangeEvent, useEffect, useCallback } from 'react';
 import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown, BiSort } from 'react-icons/bi';
+import { CSVLink } from 'react-csv';
 
 import './App.scss';
 import mockData from './data/accounts.json';
@@ -13,6 +14,7 @@ function App() {
   const [pageSize, setPageSize] = useState(100);
   const [lastDocId, setLastDocId] = useState();
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState('');
   const [holders, setHolders] = useState<AccountHolders[]>([]);
   const [dateSortOrder, setDateSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
   const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
@@ -24,8 +26,21 @@ function App() {
   const countryCodes = Array.from(new Set(countryList));
   const authTypes = Array.from(new Set(authList));
 
+  const loadData = useCallback(async () => {
+    const result = await lednApi.post('/', { pageSize });
+    setLoading(false);
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+  }, [pageSize]);
+
   const fetchPaginatedData = async (url: string) => {
     const result = await lednApi.post(`/${url}`, { pageSize, lastId: lastDocId });
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+  };
+
+  const handleSearch = async () => {
+    const result = await lednApi.post('/search', { pageSize, value: searchInput });
     setHolders(result.data.accounts);
     setLastDocId(result.data.lastDocId);
   };
@@ -33,39 +48,37 @@ function App() {
   const columns = useMemo(
     () => [
       {
-        Header: 'First Name',
-        colKey: 'First Name'
+        label: 'First Name',
+        key: 'First Name'
       },
       {
-        Header: 'Last Name',
-        colKey: 'Last Name'
+        label: 'Last Name',
+        key: 'Last Name'
       },
       {
-        Header: 'Country Code',
-        colKey: 'country',
-        filterable: true
+        label: 'Country Code',
+        key: 'Country'
       },
       {
-        Header: 'Email',
-        colKey: 'email'
+        label: 'Email',
+        key: 'email'
       },
       {
-        Header: 'Date of Birth',
-        colKey: 'dob'
+        label: 'Date of Birth',
+        key: 'dob'
       },
       {
-        Header: 'Auth Type',
-        colKey: 'mfa',
-        filterable: true
+        label: 'Auth Type',
+        key: 'mfa'
       },
       {
-        Header: 'Tokens Held',
-        colKey: 'amt',
+        label: 'Tokens Held',
+        key: 'amt',
         sortable: true
       },
       {
-        Header: 'Date Created',
-        colKey: 'createdDate',
+        label: 'Date Created',
+        key: 'createdDate',
         sortable: true
       }
     ],
@@ -139,6 +152,10 @@ function App() {
     fetchPaginatedData(Page.PREV);
   };
 
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(event.target.value);
+  };
+
   const filterData = async (type: string, value: string) => {
     const result = await lednApi.post('/filter', { pageSize, type, value });
     setHolders(result.data.accounts);
@@ -146,23 +163,34 @@ function App() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      const result = await lednApi.post('/', { pageSize });
-      setLoading(false);
-      setHolders(result.data.accounts);
-      setLastDocId(result.data.lastDocId);
-
-      console.log('RES:', result);
-    };
-
     loadData();
-  }, [pageSize]);
+  }, [loadData]);
 
   return (
     <div className="container">
       <header className="my-4">
         <h1>Ledn Token Dashboard</h1>
       </header>
+      <div className="row">
+        <form className="d-flex my-3 col-8">
+          <input
+            value={searchInput}
+            onChange={handleChange}
+            className="form-control me-2"
+            type="search"
+            placeholder="Search account name"
+            aria-label="Search"
+          />
+          <button onClick={handleSearch} className="btn btn-outline-info" type="button">
+            Search
+          </button>
+        </form>
+        <div className="col-4 my-3 d-flex justify-content-end align-items-center">
+          <CSVLink data={holders} headers={columns}>
+            <button className="btn btn-primary">Download CSV</button>
+          </CSVLink>
+        </div>
+      </div>
 
       <div className="d-flex">
         <div className="w-100 my-4 me-4">
@@ -227,26 +255,26 @@ function App() {
           <tr className="border-0">
             {columns.map((col) => (
               <th
-                key={col.colKey}
+                key={col.key}
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
-                  if (col.sortable && col.colKey === 'amt') {
+                  if (col.sortable && col.key === 'amt') {
                     sortByTokenAmount();
                   }
-                  if (col.sortable && col.colKey === 'createdDate') {
+                  if (col.sortable && col.key === 'createdDate') {
                     sortByDate();
                   }
                 }}
               >
-                {col.Header}
-                {col.colKey === 'amt' && (
+                {col.label}
+                {col.key === 'amt' && (
                   <span className="ms-2">
                     {SortOrder.DEFAULT === amountSortOrder && <BiSort />}
                     {SortOrder.ASC === amountSortOrder && <BiSortUp />}
                     {SortOrder.DESC === amountSortOrder && <BiSortDown />}
                   </span>
                 )}
-                {col.colKey === 'createdDate' && (
+                {col.key === 'createdDate' && (
                   <span className="ms-2">
                     {SortOrder.DEFAULT === dateSortOrder && <BiSort />}
                     {SortOrder.ASC === dateSortOrder && <BiSortUp />}
