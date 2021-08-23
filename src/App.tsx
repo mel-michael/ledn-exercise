@@ -1,4 +1,4 @@
-import { useState, useMemo, ChangeEvent, useEffect } from 'react';
+import { useState, useMemo, ChangeEvent, useEffect, useCallback } from 'react';
 import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown } from 'react-icons/bi';
 
@@ -9,6 +9,7 @@ import { AccountHolders, SortOrder } from './types';
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
 function App() {
+  const [pageSize, setPageSize] = useState(25);
   const [holders, setHolders] = useState<AccountHolders[]>([]);
   const [dateSortOrder, setDateSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
   const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
@@ -19,6 +20,11 @@ function App() {
   // make list unique
   const countryCodes = Array.from(new Set(countryList));
   const authTypes = Array.from(new Set(authList));
+
+  const fetchData = useCallback(async (size) => {
+    const result = await lednApi.post('/', { pageSize: size });
+    setHolders(result.data.accounts);
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -113,27 +119,13 @@ function App() {
     console.log(evt.target.value);
   };
 
+  const handlePageSize = (evt: ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(evt.target.value));
+  };
+
   useEffect(() => {
-    async function fetchData() {
-      const result = await lednApi.post('/', { pageSize: 20 });
-      console.log('RES:::', result);
-    }
-    fetchData();
-    // lednApi.post()
-    // fetch(`${API_URL}`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Accept': 'application/json',
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({ pageSize: 20 })
-    // })
-    //   .then((res) => res.json())
-    //   .then((data) => {
-    //     console.log('POST::', data)
-    //     // setHolders(data);
-    //   });
-  }, []);
+    fetchData(pageSize);
+  }, [fetchData, pageSize]);
 
   return (
     <div className="container">
@@ -141,7 +133,7 @@ function App() {
         <h1>Ledn Token Dashboard</h1>
       </header>
 
-      <div className="row">
+      <div className="row d-flex">
         <div className="form-group w-25 my-4">
           <label htmlFor="filterOPtion" className="mb-2">
             <strong>Filter By Country Code:</strong>
@@ -170,6 +162,17 @@ function App() {
                 {auth === 'null' ? 'No Auth' : auth}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="form-group w-auto my-4 ml-4">
+          <label htmlFor="filterOPtion" className="mb-2">
+            <strong>Page Size:</strong>
+          </label>
+          <select defaultValue={pageSize} className="form-select" onChange={handlePageSize} aria-label="filterOption">
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
           </select>
         </div>
       </div>
