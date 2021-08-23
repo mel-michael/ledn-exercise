@@ -1,15 +1,17 @@
-import { useState, useMemo, ChangeEvent, useEffect, useCallback } from 'react';
+import { useState, useMemo, ChangeEvent, useEffect } from 'react';
 import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown } from 'react-icons/bi';
 
 import './App.scss';
 import { lednApi } from './utils/api';
-import { AccountHolders, SortOrder } from './types';
+import { AccountHolders, SortOrder, Page } from './types';
 
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
 function App() {
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
+  const [lastDocId, setLastDocId] = useState();
+  const [loading, setLoading] = useState(true);
   const [holders, setHolders] = useState<AccountHolders[]>([]);
   const [dateSortOrder, setDateSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
   const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
@@ -21,10 +23,11 @@ function App() {
   const countryCodes = Array.from(new Set(countryList));
   const authTypes = Array.from(new Set(authList));
 
-  const fetchData = useCallback(async (size) => {
-    const result = await lednApi.post('/', { pageSize: size });
+  const fetchPaginatedData = async (url: string) => {
+    const result = await lednApi.post(`/${url}`, { pageSize, lastId: lastDocId });
     setHolders(result.data.accounts);
-  }, []);
+    setLastDocId(result.data.lastDocId);
+  };
 
   const columns = useMemo(
     () => [
@@ -123,9 +126,24 @@ function App() {
     setPageSize(Number(evt.target.value));
   };
 
+  const handleNext = () => {
+    fetchPaginatedData(Page.NEXT);
+  };
+
+  const handlePrev = () => {
+    fetchPaginatedData(Page.PREV);
+  };
+
   useEffect(() => {
-    fetchData(pageSize);
-  }, [fetchData, pageSize]);
+    const loadData = async () => {
+      const result = await lednApi.post('/', { pageSize });
+      setLoading(false);
+      setHolders(result.data.accounts);
+      setLastDocId(result.data.lastDocId);
+    };
+
+    loadData();
+  }, [pageSize]);
 
   return (
     <div className="container">
@@ -133,8 +151,8 @@ function App() {
         <h1>Ledn Token Dashboard</h1>
       </header>
 
-      <div className="row d-flex">
-        <div className="form-group w-25 my-4">
+      <div className="d-flex">
+        <div className="w-100 my-4 me-4">
           <label htmlFor="filterOPtion" className="mb-2">
             <strong>Filter By Country Code:</strong>
           </label>
@@ -149,7 +167,7 @@ function App() {
             ))}
           </select>
         </div>
-        <div className="form-group w-25 my-4 ml-4">
+        <div className="w-100 my-4 me-4">
           <label htmlFor="filterOPtion" className="mb-2">
             <strong>Filter By Auth Type:</strong>
           </label>
@@ -164,16 +182,18 @@ function App() {
             ))}
           </select>
         </div>
-        <div className="form-group w-auto my-4 ml-4">
-          <label htmlFor="filterOPtion" className="mb-2">
-            <strong>Page Size:</strong>
-          </label>
-          <select defaultValue={pageSize} className="form-select" onChange={handlePageSize} aria-label="filterOption">
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+        <div className="w-100 my-4 d-flex justify-content-end">
+          <div>
+            <label htmlFor="filterOPtion" className="mb-2">
+              <strong>Page Size:</strong>
+            </label>
+            <select defaultValue={pageSize} className="form-select" onChange={handlePageSize} aria-label="filterOption">
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -211,9 +231,16 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {holders.length === 0 && (
+          {loading && (
             <tr>
               <td className="border-0">Loading data...</td>
+            </tr>
+          )}
+          {!loading && holders.length === 0 && (
+            <tr>
+              <td colSpan={8}>
+                <p className="my-4 alert alert-info my-3 text-center">No Records Found</p>
+              </td>
             </tr>
           )}
           {holders.length > 0 &&
@@ -233,6 +260,21 @@ function App() {
             })}
         </tbody>
       </table>
+
+      <nav aria-label="Page navigation example">
+        <ul className="pagination justify-content-end">
+          <li className="page-item">
+            <button type="button" className="page-link" onClick={handlePrev}>
+              Previous
+            </button>
+          </li>
+          <li className="page-item">
+            <button type="button" className="page-link" onClick={handleNext}>
+              Next
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
   );
 }

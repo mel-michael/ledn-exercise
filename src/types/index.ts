@@ -15,3 +15,8 @@ export enum SortOrder {
   ASC,
   DESC
 }
+
+export enum Page {
+  NEXT = 'next',
+  PREV = 'prev'
+}
