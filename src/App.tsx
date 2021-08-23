@@ -12,6 +12,7 @@ const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DES
 
 function App() {
   const [pageSize, setPageSize] = useState(100);
+  const [userCount, setUserCount] = useState(0);
   const [lastDocId, setLastDocId] = useState();
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
@@ -31,6 +32,7 @@ function App() {
     setLoading(false);
     setHolders(result.data.accounts);
     setLastDocId(result.data.lastDocId);
+    setUserCount(result.data.count);
   }, [pageSize]);
 
   const fetchPaginatedData = async (url: string) => {
@@ -171,9 +173,29 @@ function App() {
 
   return (
     <div className="container">
-      <header className="my-4">
+      <header className="mt-5 mb-3">
         <h1>Ledn Token Dashboard</h1>
       </header>
+
+      <div className="d-flex justify-content-between border-top py-5">
+        <div className="border shadow-sm insights p-3 text-center">
+          <h5>Total Accounts</h5>
+          <h1>{userCount.toLocaleString()}</h1>
+        </div>
+        <div className="border shadow-sm insights p-3 text-center">
+          <h5>No. of Countries</h5>
+          <h1>{countryCodes.length}</h1>
+        </div>
+        <div className="border shadow-sm insights p-3 text-center">
+          <h5>Total Accounts</h5>
+          <h1>{userCount.toLocaleString()}</h1>
+        </div>
+        <div className="border shadow-sm insights p-3 text-center">
+          <h5>No. of Countries</h5>
+          <h1>{countryCodes.length}</h1>
+        </div>
+      </div>
+
       <div className="row">
         <form className="d-flex my-3 col-8">
           <input
@@ -248,6 +270,7 @@ function App() {
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
+              <option value={200}>200</option>
             </select>
           </div>
         </div>
