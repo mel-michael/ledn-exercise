@@ -204,6 +204,7 @@ export const AccountTable: React.FC<TableProps> = ({ pageCount, countries, authT
               name="pageSize"
               className="form-select"
               onChange={(evt: ChangeEvent<HTMLSelectElement>) => {
+                setpageIndex(1);
                 setPageSize(Number(evt.target.value));
               }}
               aria-label="pageSize"
@@ -284,28 +285,31 @@ export const AccountTable: React.FC<TableProps> = ({ pageCount, countries, authT
         </tbody>
       </table>
 
-      <nav aria-label="Page navigation example">
-        <p>
-          Page: {pageIndex} :: Showing result {pageSize * pageIndex} of {pageCount}
+      <div className="d-flex align-items-center justif-content-between">
+        <p className="w-100">
+          Page: <strong>{pageIndex}</strong> {`>>>>`} Showing result(s) <strong>{pageSize * pageIndex}</strong> of{' '}
+          <strong>{pageCount}</strong>
         </p>
-        <ul className="pagination justify-content-end">
-          <li className={`page-item ${pageIndex === 1 ? 'disabled' : ''}`}>
-            <button disabled={pageIndex === 1} type="button" className="page-link" onClick={handlePrev}>
-              Previous
-            </button>
-          </li>
-          <li className={`page-item ${pageIndex === Math.ceil(pageCount / pageSize) ? 'disabled' : ''}`}>
-            <button
-              type="button"
-              disabled={pageIndex === Math.ceil(pageCount / pageSize)}
-              className="page-link"
-              onClick={handleNext}
-            >
-              Next
-            </button>
-          </li>
-        </ul>
-      </nav>
+        <nav aria-label="Page navigation w-100">
+          <ul className="pagination justify-content-end">
+            <li className={`page-item ${pageIndex === 1 ? 'disabled' : ''}`}>
+              <button disabled={pageIndex === 1} type="button" className="page-link" onClick={handlePrev}>
+                Previous
+              </button>
+            </li>
+            <li className={`page-item ${pageIndex === Math.ceil(pageCount / pageSize) ? 'disabled' : ''}`}>
+              <button
+                type="button"
+                disabled={pageIndex === Math.ceil(pageCount / pageSize)}
+                className="page-link"
+                onClick={handleNext}
+              >
+                Next
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </>
   );
 };

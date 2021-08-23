@@ -35,7 +35,7 @@ function App() {
   }, []);
 
   return (
-    <div className="container">
+    <div className="container pb-6">
       <header className="mt-5 mb-3 text-center ">
         <h1>Ledn Token Dashboard</h1>
       </header>
