@@ -152,8 +152,11 @@ function App() {
     fetchPaginatedData(Page.PREV);
   };
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearchInput(event.target.value);
+  const handleChange = ({ target: { name, value } }: ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(value);
+    if (!value) {
+      loadData();
+    }
   };
 
   const filterData = async (type: string, value: string) => {
