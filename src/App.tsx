@@ -1,15 +1,16 @@
 import { useState, useMemo, ChangeEvent, useEffect } from 'react';
 import { format, compareAsc, compareDesc } from 'date-fns';
-import { BiSortUp, BiSortDown } from 'react-icons/bi';
+import { BiSortUp, BiSortDown, BiSort } from 'react-icons/bi';
 
 import './App.scss';
+import mockData from './data/accounts.json';
 import { lednApi } from './utils/api';
 import { AccountHolders, SortOrder, Page } from './types';
 
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
 function App() {
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(100);
   const [lastDocId, setLastDocId] = useState();
   const [loading, setLoading] = useState(true);
   const [holders, setHolders] = useState<AccountHolders[]>([]);
@@ -17,8 +18,8 @@ function App() {
   const [amountSortOrder, setAmountSortOrder] = useState<SortOrder>(SortOrder.DEFAULT);
 
   // generate filter list
-  const countryList = holders.length > 0 ? holders.map((mock) => mock.Country) : [];
-  const authList = holders.length > 0 ? holders.map((mock) => mock.mfa) : [];
+  const countryList = mockData.length > 0 ? mockData.map((mock) => mock.Country) : [];
+  const authList = mockData.length > 0 ? mockData.map((mock) => mock.mfa) : [];
   // make list unique
   const countryCodes = Array.from(new Set(countryList));
   const authTypes = Array.from(new Set(authList));
@@ -118,8 +119,12 @@ function App() {
     setHolders(sortedByDate);
   };
 
-  const filterByCountry = (evt: ChangeEvent<HTMLSelectElement>) => {
-    console.log(evt.target.value);
+  const filterByCountryCode = ({ target: { value } }: ChangeEvent<HTMLSelectElement>) => {
+    filterData(value);
+  };
+
+  const filterByAuthtype = ({ target: { value } }: ChangeEvent<HTMLSelectElement>) => {
+    filterData(value);
   };
 
   const handlePageSize = (evt: ChangeEvent<HTMLSelectElement>) => {
@@ -134,12 +139,20 @@ function App() {
     fetchPaginatedData(Page.PREV);
   };
 
+  const filterData = async (value: string) => {
+    const result = await lednApi.post('/filter', { pageSize, option: value });
+    setHolders(result.data.accounts);
+    setLastDocId(result.data.lastDocId);
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const result = await lednApi.post('/', { pageSize });
       setLoading(false);
       setHolders(result.data.accounts);
       setLastDocId(result.data.lastDocId);
+
+      console.log('RES:', result);
     };
 
     loadData();
@@ -156,7 +169,7 @@ function App() {
           <label htmlFor="filterOPtion" className="mb-2">
             <strong>Filter By Country Code:</strong>
           </label>
-          <select defaultValue="null" className="form-select" onChange={filterByCountry} aria-label="filterOption">
+          <select defaultValue="null" className="form-select" onChange={filterByCountryCode} aria-label="filterOption">
             <option disabled value="null">
               Select Country Code
             </option>
@@ -171,7 +184,7 @@ function App() {
           <label htmlFor="filterOPtion" className="mb-2">
             <strong>Filter By Auth Type:</strong>
           </label>
-          <select defaultValue="null" className="form-select" onChange={filterByCountry} aria-label="filterOption">
+          <select defaultValue="null" className="form-select" onChange={filterByAuthtype} aria-label="filterOption">
             <option disabled value="null">
               Select Auth Type
             </option>
@@ -214,16 +227,18 @@ function App() {
                 }}
               >
                 {col.Header}
-                {amountSortOrder !== SortOrder.DEFAULT && (
-                  <span className="pl-2">
-                    {col.colKey === 'amt' && SortOrder.ASC === amountSortOrder && <BiSortUp />}
-                    {col.colKey === 'amt' && SortOrder.DESC === amountSortOrder && <BiSortDown />}
+                {col.colKey === 'amt' && (
+                  <span className="ms-2">
+                    {SortOrder.DEFAULT === amountSortOrder && <BiSort />}
+                    {SortOrder.ASC === amountSortOrder && <BiSortUp />}
+                    {SortOrder.DESC === amountSortOrder && <BiSortDown />}
                   </span>
                 )}
-                {dateSortOrder !== SortOrder.DEFAULT && (
-                  <span className="pl-2">
-                    {col.colKey === 'createdDate' && SortOrder.ASC === dateSortOrder && <BiSortUp />}
-                    {col.colKey === 'createdDate' && SortOrder.DESC === dateSortOrder && <BiSortDown />}
+                {col.colKey === 'createdDate' && (
+                  <span className="ms-2">
+                    {SortOrder.DEFAULT === dateSortOrder && <BiSort />}
+                    {SortOrder.ASC === dateSortOrder && <BiSortUp />}
+                    {SortOrder.DESC === dateSortOrder && <BiSortDown />}
                   </span>
                 )}
               </th>
