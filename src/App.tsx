@@ -3,6 +3,8 @@ import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown, BiSort } from 'react-icons/bi';
 import { CSVLink } from 'react-csv';
 
+import { Insights } from './components/Insights'
+
 import './App.scss';
 import mockData from './data/accounts.json';
 import { lednApi } from './utils/api';
@@ -177,24 +179,7 @@ function App() {
         <h1>Ledn Token Dashboard</h1>
       </header>
 
-      <div className="d-flex justify-content-between border-top py-5">
-        <div className="border shadow-sm insights p-3 text-center">
-          <h5>Total Accounts</h5>
-          <h1>{userCount.toLocaleString()}</h1>
-        </div>
-        <div className="border shadow-sm insights p-3 text-center">
-          <h5>No. of Countries</h5>
-          <h1>{countryCodes.length}</h1>
-        </div>
-        <div className="border shadow-sm insights p-3 text-center">
-          <h5>Total Accounts</h5>
-          <h1>{userCount.toLocaleString()}</h1>
-        </div>
-        <div className="border shadow-sm insights p-3 text-center">
-          <h5>No. of Countries</h5>
-          <h1>{countryCodes.length}</h1>
-        </div>
-      </div>
+      <Insights countryCount={countryCodes.length} userCount={userCount} />
 
       <div className="row">
         <form className="d-flex my-3 col-8">
