@@ -11,15 +11,16 @@ import { AccountHolders, SortOrder, Page } from '../types';
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
 type TableProps = {
+  pageCount: number;
   countries: string[];
   authTypes: string[];
   accounts: AccountHolders[];
 };
 
-export const AccountTable: React.FC<TableProps> = ({ countries, authTypes, accounts }) => {
+export const AccountTable: React.FC<TableProps> = ({ pageCount, countries, authTypes, accounts }) => {
   const [loading, setLoading] = useState(false);
   const [pageSize, setPageSize] = useState(100);
-
+  const [pageIndex, setpageIndex] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [lastDocId, setLastDocId] = useState('');
   const [holders, setHolders] = useState<AccountHolders[]>(accounts);
@@ -30,7 +31,7 @@ export const AccountTable: React.FC<TableProps> = ({ countries, authTypes, accou
     const result = await lednApi.post('/', { pageSize });
     setHolders(result.data.accounts);
     setLastDocId(result.data.lastDocId);
-    setLoading(false)
+    setLoading(false);
   }, [pageSize]);
 
   const sortByTokenAmount = () => {
@@ -107,12 +108,12 @@ export const AccountTable: React.FC<TableProps> = ({ countries, authTypes, accou
   };
 
   const handleNext = () => {
-    // setLoading(true);
+    setpageIndex((c) => c + 1);
     fetchPaginatedData(Page.NEXT);
   };
 
   const handlePrev = () => {
-    // setLoading(true);
+    setpageIndex((c) => c - 1);
     fetchPaginatedData(Page.PREV);
   };
 
@@ -284,14 +285,22 @@ export const AccountTable: React.FC<TableProps> = ({ countries, authTypes, accou
       </table>
 
       <nav aria-label="Page navigation example">
+        <p>
+          Page: {pageIndex} :: Showing result {pageSize * pageIndex} of {pageCount}
+        </p>
         <ul className="pagination justify-content-end">
-          <li className="page-item">
-            <button type="button" className="page-link" onClick={handlePrev}>
+          <li className={`page-item ${pageIndex === 1 ? 'disabled' : ''}`}>
+            <button disabled={pageIndex === 1} type="button" className="page-link" onClick={handlePrev}>
               Previous
             </button>
           </li>
-          <li className="page-item">
-            <button type="button" className="page-link" onClick={handleNext}>
+          <li className={`page-item ${pageIndex === Math.ceil(pageCount / pageSize) ? 'disabled' : ''}`}>
+            <button
+              type="button"
+              disabled={pageIndex === Math.ceil(pageCount / pageSize)}
+              className="page-link"
+              onClick={handleNext}
+            >
               Next
             </button>
           </li>

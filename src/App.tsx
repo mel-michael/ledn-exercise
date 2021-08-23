@@ -42,7 +42,7 @@ function App() {
 
       <Insights countryCount={countryCodes.length} userCount={userCount} />
 
-      {!loading && <AccountTable accounts={holders} countries={countryCodes} authTypes={authTypes} />}
+      {!loading && <AccountTable pageCount={userCount}  accounts={holders} countries={countryCodes} authTypes={authTypes} />}
     </div>
   );
 }
