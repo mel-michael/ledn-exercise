@@ -3,9 +3,8 @@ import { format, compareAsc, compareDesc } from 'date-fns';
 import { BiSortUp, BiSortDown } from 'react-icons/bi';
 
 import './App.scss';
+import { lednApi } from './utils/api';
 import { AccountHolders, SortOrder } from './types';
-
-const API_URL = 'http://localhost:7000';
 
 const sortConfig: SortOrder[] = [SortOrder.DEFAULT, SortOrder.ASC, SortOrder.DESC];
 
@@ -115,11 +114,25 @@ function App() {
   };
 
   useEffect(() => {
-    fetch(API_URL)
-      .then((res) => res.json())
-      .then((data) => {
-        setHolders(data);
-      });
+    async function fetchData() {
+      const result = await lednApi.post('/', { pageSize: 20 });
+      console.log('RES:::', result);
+    }
+    fetchData();
+    // lednApi.post()
+    // fetch(`${API_URL}`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Accept': 'application/json',
+    //     'Content-Type': 'application/json'
+    //   },
+    //   body: JSON.stringify({ pageSize: 20 })
+    // })
+    //   .then((res) => res.json())
+    //   .then((data) => {
+    //     console.log('POST::', data)
+    //     // setHolders(data);
+    //   });
   }, []);
 
   return (
@@ -195,7 +208,11 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {holders.length === 0 && <tr>Loading data...</tr>}
+          {holders.length === 0 && (
+            <tr>
+              <td className="border-0">Loading data...</td>
+            </tr>
+          )}
           {holders.length > 0 &&
             holders.map((user) => {
               return (
